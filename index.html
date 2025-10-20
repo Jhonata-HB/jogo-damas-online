@@ -112,6 +112,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            cursor: pointer;
         }
         
         .dark {
@@ -123,8 +124,8 @@
         }
         
         .piece {
-            width: 80%;
-            height: 80%;
+            width: 85%;
+            height: 85%;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.3s;
@@ -133,11 +134,13 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
+            z-index: 10;
+            position: relative;
         }
         
         .piece:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
         
         .player1-piece {
@@ -154,24 +157,33 @@
             content: "♔";
             color: gold;
             text-shadow: 0 0 3px black;
+            font-size: 1rem;
         }
         
         .selected {
             box-shadow: 0 0 0 3px #f1c40f, 0 0 15px #f1c40f;
+            transform: scale(1.1);
         }
         
         .valid-move {
             position: relative;
+            cursor: pointer;
         }
         
-        .valid-move::after {
+        .valid-move::before {
             content: "";
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            background: rgba(46, 204, 113, 0.5);
+            background: rgba(46, 204, 113, 0.3);
             border: 2px solid #2ecc71;
+            z-index: 1;
+        }
+        
+        .valid-capture::before {
+            background: rgba(231, 76, 60, 0.3);
+            border: 2px solid #e74c3c;
         }
         
         .controls {
@@ -249,6 +261,7 @@
             border-radius: 5px;
             border: 1px solid #ccc;
             background: rgba(255, 255, 255, 0.9);
+            min-width: 200px;
         }
         
         .notification {
@@ -269,6 +282,14 @@
             transform: translateX(0);
         }
         
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(241, 196, 15, 0.2);
+            border-radius: 5px;
+            text-align: center;
+        }
+        
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.8rem;
@@ -285,6 +306,12 @@
             
             button {
                 width: 100%;
+            }
+            
+            .piece {
+                width: 80%;
+                height: 80%;
+                font-size: 1.2rem;
             }
         }
     </style>
@@ -316,6 +343,10 @@
                     <div id="player2-status">12 peças</div>
                 </div>
             </div>
+        </div>
+        
+        <div class="message" id="game-message">
+            Clique em uma peça para selecioná-la, depois clique em uma casa destacada para movê-la
         </div>
         
         <div class="game-board">
@@ -360,355 +391,4 @@
             const currentPlayerElement = document.getElementById('current-player');
             const player1StatusElement = document.getElementById('player1-status');
             const player2StatusElement = document.getElementById('player2-status');
-            const newGameButton = document.getElementById('new-game');
-            const copyLinkButton = document.getElementById('copy-link');
-            const shareInstructionsButton = document.getElementById('share-instructions');
-            const gameUrlElement = document.getElementById('game-url');
-            const notificationElement = document.getElementById('notification');
-            
-            // Estado do jogo
-            let gameState = {
-                board: [],
-                currentPlayer: 1,
-                selectedPiece: null,
-                validMoves: [],
-                player1Pieces: 12,
-                player2Pieces: 12,
-                gameId: generateGameId()
-            };
-            
-            // Inicializar o jogo
-            initGame();
-            
-            // Gerar um ID único para o jogo
-            function generateGameId() {
-                return 'damas-' + Math.random().toString(36).substring(2, 10);
-            }
-            
-            // Inicializar o tabuleiro
-            function initGame() {
-                createBoard();
-                setupPieces();
-                updateGameUrl();
-                renderBoard();
-                updateGameInfo();
-                
-                // Salvar estado inicial
-                saveGameState();
-            }
-            
-            // Criar o tabuleiro
-            function createBoard() {
-                boardElement.innerHTML = '';
-                gameState.board = [];
-                
-                for (let row = 0; row < 8; row++) {
-                    gameState.board[row] = [];
-                    for (let col = 0; col < 8; col++) {
-                        const cell = document.createElement('div');
-                        cell.className = `cell ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
-                        cell.dataset.row = row;
-                        cell.dataset.col = col;
-                        
-                        cell.addEventListener('click', () => handleCellClick(row, col));
-                        
-                        boardElement.appendChild(cell);
-                        gameState.board[row][col] = null;
-                    }
-                }
-            }
-            
-            // Configurar as peças iniciais
-            function setupPieces() {
-                // Jogador 1 (parte superior)
-                for (let row = 0; row < 3; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        if ((row + col) % 2 === 1) {
-                            gameState.board[row][col] = { player: 1, isKing: false };
-                        }
-                    }
-                }
-                
-                // Jogador 2 (parte inferior)
-                for (let row = 5; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        if ((row + col) % 2 === 1) {
-                            gameState.board[row][col] = { player: 2, isKing: false };
-                        }
-                    }
-                }
-            }
-            
-            // Renderizar o tabuleiro
-            function renderBoard() {
-                for (let row = 0; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        const cell = boardElement.children[row * 8 + col];
-                        cell.innerHTML = '';
-                        
-                        // Remover classes de movimento válido
-                        cell.classList.remove('valid-move');
-                        
-                        const piece = gameState.board[row][col];
-                        
-                        if (piece) {
-                            const pieceElement = document.createElement('div');
-                            pieceElement.className = `piece player${piece.player}-piece`;
-                            if (piece.isKing) {
-                                pieceElement.classList.add('king');
-                            }
-                            
-                            // Destacar peça selecionada
-                            if (gameState.selectedPiece && 
-                                gameState.selectedPiece.row === row && 
-                                gameState.selectedPiece.col === col) {
-                                pieceElement.classList.add('selected');
-                            }
-                            
-                            cell.appendChild(pieceElement);
-                        }
-                    }
-                }
-                
-                // Mostrar movimentos válidos
-                gameState.validMoves.forEach(move => {
-                    const cell = boardElement.children[move.row * 8 + move.col];
-                    cell.classList.add('valid-move');
-                });
-            }
-            
-            // Atualizar informações do jogo
-            function updateGameInfo() {
-                currentPlayerElement.textContent = `Jogador ${gameState.currentPlayer}`;
-                
-                // Contar peças
-                gameState.player1Pieces = countPieces(1);
-                gameState.player2Pieces = countPieces(2);
-                
-                player1StatusElement.textContent = `${gameState.player1Pieces} peças`;
-                player2StatusElement.textContent = `${gameState.player2Pieces} peças`;
-                
-                // Verificar fim de jogo
-                if (gameState.player1Pieces === 0) {
-                    alert('Jogador 2 venceu!');
-                    resetGame();
-                } else if (gameState.player2Pieces === 0) {
-                    alert('Jogador 1 venceu!');
-                    resetGame();
-                }
-            }
-            
-            // Contar peças de um jogador
-            function countPieces(player) {
-                let count = 0;
-                for (let row = 0; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        const piece = gameState.board[row][col];
-                        if (piece && piece.player === player) {
-                            count++;
-                        }
-                    }
-                }
-                return count;
-            }
-            
-            // Manipular clique em uma célula
-            function handleCellClick(row, col) {
-                const piece = gameState.board[row][col];
-                
-                // Se não há peça selecionada e clicou em uma peça do jogador atual
-                if (!gameState.selectedPiece && piece && piece.player === gameState.currentPlayer) {
-                    gameState.selectedPiece = { row, col };
-                    gameState.validMoves = getValidMoves(row, col);
-                    renderBoard();
-                }
-                // Se há peça selecionada e clicou em um movimento válido
-                else if (gameState.selectedPiece && 
-                         gameState.validMoves.some(move => move.row === row && move.col === col)) {
-                    movePiece(gameState.selectedPiece.row, gameState.selectedPiece.col, row, col);
-                    gameState.selectedPiece = null;
-                    gameState.validMoves = [];
-                    
-                    // Alternar jogador
-                    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-                    
-                    renderBoard();
-                    updateGameInfo();
-                    saveGameState();
-                }
-                // Clicou em outro lugar - cancelar seleção
-                else {
-                    gameState.selectedPiece = null;
-                    gameState.validMoves = [];
-                    renderBoard();
-                }
-            }
-            
-            // Obter movimentos válidos para uma peça
-            function getValidMoves(row, col) {
-                const piece = gameState.board[row][col];
-                const moves = [];
-                const directions = [];
-                
-                // Direções baseadas no jogador e se é dama
-                if (piece.player === 1 || piece.isKing) {
-                    directions.push({ row: -1, col: -1 }); // Cima-esquerda
-                    directions.push({ row: -1, col: 1 });  // Cima-direita
-                }
-                
-                if (piece.player === 2 || piece.isKing) {
-                    directions.push({ row: 1, col: -1 });  // Baixo-esquerda
-                    directions.push({ row: 1, col: 1 });   // Baixo-direita
-                }
-                
-                // Verificar movimentos simples
-                directions.forEach(dir => {
-                    const newRow = row + dir.row;
-                    const newCol = col + dir.col;
-                    
-                    if (isValidPosition(newRow, newCol) && !gameState.board[newRow][newCol]) {
-                        moves.push({ row: newRow, col: newCol, isCapture: false });
-                    }
-                });
-                
-                // Verificar capturas
-                directions.forEach(dir => {
-                    const jumpRow = row + dir.row;
-                    const jumpCol = col + dir.col;
-                    const landRow = row + 2 * dir.row;
-                    const landCol = col + 2 * dir.col;
-                    
-                    if (isValidPosition(jumpRow, jumpCol) && 
-                        isValidPosition(landRow, landCol) &&
-                        gameState.board[jumpRow][jumpCol] &&
-                        gameState.board[jumpRow][jumpCol].player !== piece.player &&
-                        !gameState.board[landRow][landCol]) {
-                        moves.push({ 
-                            row: landRow, 
-                            col: landCol, 
-                            isCapture: true,
-                            captureRow: jumpRow,
-                            captureCol: jumpCol
-                        });
-                    }
-                });
-                
-                return moves;
-            }
-            
-            // Mover uma peça
-            function movePiece(fromRow, fromCol, toRow, toCol) {
-                const piece = gameState.board[fromRow][fromCol];
-                gameState.board[toRow][toCol] = piece;
-                gameState.board[fromRow][fromCol] = null;
-                
-                // Verificar se virou dama
-                if ((piece.player === 1 && toRow === 7) || (piece.player === 2 && toRow === 0)) {
-                    piece.isKing = true;
-                }
-                
-                // Verificar se foi uma captura
-                const move = gameState.validMoves.find(m => m.row === toRow && m.col === toCol);
-                if (move && move.isCapture) {
-                    gameState.board[move.captureRow][move.captureCol] = null;
-                }
-            }
-            
-            // Verificar se a posição é válida
-            function isValidPosition(row, col) {
-                return row >= 0 && row < 8 && col >= 0 && col < 8;
-            }
-            
-            // Reiniciar o jogo
-            function resetGame() {
-                gameState = {
-                    board: [],
-                    currentPlayer: 1,
-                    selectedPiece: null,
-                    validMoves: [],
-                    player1Pieces: 12,
-                    player2Pieces: 12,
-                    gameId: generateGameId()
-                };
-                
-                initGame();
-            }
-            
-            // Atualizar URL do jogo
-            function updateGameUrl() {
-                const url = window.location.href.split('?')[0] + '?game=' + gameState.gameId;
-                gameUrlElement.value = url;
-            }
-            
-            // Copiar URL do jogo
-            function copyGameUrl() {
-                gameUrlElement.select();
-                document.execCommand('copy');
-                
-                // Mostrar notificação
-                notificationElement.classList.add('show');
-                setTimeout(() => {
-                    notificationElement.classList.remove('show');
-                }, 3000);
-            }
-            
-            // Salvar estado do jogo
-            function saveGameState() {
-                localStorage.setItem('damas-game-state', JSON.stringify(gameState));
-            }
-            
-            // Carregar estado do jogo
-            function loadGameState() {
-                const savedState = localStorage.getItem('damas-game-state');
-                if (savedState) {
-                    const parsedState = JSON.parse(savedState);
-                    
-                    // Verificar se é o mesmo jogo
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const gameId = urlParams.get('game');
-                    
-                    if (!gameId || gameId === parsedState.gameId) {
-                        gameState = parsedState;
-                        renderBoard();
-                        updateGameInfo();
-                        updateGameUrl();
-                        return true;
-                    }
-                }
-                return false;
-            }
-            
-            // Event Listeners
-            newGameButton.addEventListener('click', resetGame);
-            copyLinkButton.addEventListener('click', copyGameUrl);
-            
-            shareInstructionsButton.addEventListener('click', function() {
-                alert('Para jogar com um amigo:\n\n1. Clique em "Copiar Link do Jogo"\n2. Cole o link e envie para seu amigo\n3. Quando ele abrir o link, vocês verão o mesmo tabuleiro\n4. Cada um joga no seu próprio dispositivo\n\nO jogo salva automaticamente após cada movimento!');
-            });
-            
-            // Tentar carregar jogo salvo
-            if (!loadGameState()) {
-                initGame();
-            }
-            
-            // Sincronizar a cada 2 segundos (simulação de multiplayer)
-            setInterval(() => {
-                loadGameState();
-            }, 2000);
-        });
-        
-        // Função global para copiar URL
-        function copyGameUrl() {
-            const gameUrlElement = document.getElementById('game-url');
-            gameUrlElement.select();
-            document.execCommand('copy');
-            
-            const notificationElement = document.getElementById('notification');
-            notificationElement.classList.add('show');
-            setTimeout(() => {
-                notificationElement.classList.remove('show');
-            }, 3000);
-        }
-    </script>
-</body>
-</html>
+            const gameMessage
