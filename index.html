@@ -2,83 +2,563 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Controle Financeiro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Marcha Inteligente - Sistema de Alerta de Troca</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0b2b3b 0%, #1a4a5f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 56px;
+            padding: 24px 20px 32px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin: 0 0 5px;
+            color: #FFE6C7;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .sub {
+            text-align: center;
+            color: #C9E9FF;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+        }
+
+        /* Painel de velocidade */
+        .speed-panel {
+            background: #0c1f28;
+            border-radius: 48px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .speed-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #9fc7d9;
+        }
+
+        .speed-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #f5f9ff;
+            line-height: 1;
+            margin: 5px 0;
+            font-family: monospace;
+        }
+
+        /* Marcha atual */
+        .current-gear-box {
+            background: #010b0faa;
+            border-radius: 40px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .current-gear-label {
+            font-size: 0.85rem;
+            color: #bbd4e4;
+        }
+
+        .current-gear {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #FFD966;
+            line-height: 1;
+        }
+
+        /* Alerta de troca */
+        .alert-box {
+            border-radius: 40px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .alert-normal {
+            background: #1a5d44aa;
+            border-left: 5px solid #2ecc71;
+        }
+
+        .alert-warning {
+            background: #b85c1aaa;
+            border-left: 5px solid #f39c12;
+            animation: pulse 0.8s infinite;
+        }
+
+        .alert-danger {
+            background: #c0392baa;
+            border-left: 5px solid #e74c3c;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        .alert-message {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .alert-suggestion {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* RPM Simulado */
+        .rpm-bar {
+            background: #172d36;
+            border-radius: 30px;
+            height: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .rpm-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
+            transition: width 0.2s;
+            border-radius: 30px;
+        }
+
+        .rpm-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #bbd4e4;
+            margin-top: 4px;
+        }
+
+        /* Botões e controles */
+        button {
+            background: #FFC857;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: 0.2s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .gear-table {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.7rem;
+        }
+
+        .gear-table span {
+            background: #1b4d5e;
+            padding: 4px 10px;
+            border-radius: 30px;
+        }
+
+        .gps-status {
+            background: #00000066;
+            border-radius: 30px;
+            padding: 8px;
+            margin-top: 15px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #c9e9ff;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 20px;
+            color: #afcddd;
+        }
+
+        @media (max-width: 500px) {
+            .speed-value { font-size: 3rem; }
+            .current-gear { font-size: 2.5rem; }
+            .alert-message { font-size: 1rem; }
+        }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans p-6">
+<body>
 
-    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-        <div class="bg-indigo-600 p-6 text-white">
-            <h1 class="text-2xl font-bold text-center">Gestão Financeira</h1>
-            <p class="text-indigo-100 text-sm text-center">Simples, rápido e moderno</p>
-        </div>
+<div class="card">
+    <h1>⚡ Marcha Inteligente</h1>
+    <div class="sub">alerta na hora certa para trocar de marcha</div>
 
-        <form id="financeForm" class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Descrição</label>
-                <input type="text" id="descricao" required placeholder="Ex: Aluguel" 
-                    class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Valor (R$)</label>
-                <input type="number" step="0.01" id="valor" required placeholder="0,00" 
-                    class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Tipo</label>
-                <select id="tipo" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option value="Entrada">Entrada (+)</option>
-                    <option value="Saída">Saída (-)</option>
-                </select>
-            </div>
-
-            <button type="submit" id="btnSalvar"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg">
-                Salvar Lançamento
-            </button>
-        </form>
-        
-        <div id="status" class="hidden text-center pb-4 font-medium"></div>
+    <!-- Velocidade GPS -->
+    <div class="speed-panel">
+        <div class="speed-label">📡 VELOCIDADE GPS</div>
+        <div class="speed-value"><span id="speedDisplay">--</span> <span>km/h</span></div>
     </div>
 
-    <script>
-        const APP_URL = 'SUA_URL_DO_APPS_SCRIPT_AQUI';
+    <!-- Marcha atual -->
+    <div class="current-gear-box">
+        <div class="current-gear-label">MARCHA ATUAL (estimada)</div>
+        <div class="current-gear" id="currentGear">--</div>
+    </div>
 
-        document.getElementById('financeForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSalvar');
-            const status = document.getElementById('status');
+    <!-- ÁREA DE ALERTA - ONDE APARECE "PASSE PARA A 3ª" -->
+    <div id="alertBox" class="alert-box alert-normal">
+        <div class="alert-message" id="alertMessage">✅ Marcha correta</div>
+        <div class="alert-suggestion" id="alertSuggestion">Aguardando velocidade...</div>
+    </div>
+
+    <!-- Simulador de RPM (apenas visual) -->
+    <div class="rpm-bar">
+        <div class="rpm-fill" id="rpmFill"></div>
+    </div>
+    <div class="rpm-label">
+        <span>⚡ Baixo giro</span>
+        <span>🟡 Ideal</span>
+        <span>🔴 Alto giro</span>
+    </div>
+
+    <!-- Botões -->
+    <button id="startGpsBtn">📍 ATIVAR GPS</button>
+    
+    <div class="gps-status" id="gpsStatus">
+        ⚠️ Clique em "ATIVAR GPS" e permita acesso à localização
+    </div>
+
+    <!-- Tabela de referência -->
+    <div class="gear-table">
+        <span>1ª → 0-15 km/h</span>
+        <span>2ª → 16-30 km/h</span>
+        <span>3ª → 31-45 km/h</span>
+        <span>4ª → 46-60 km/h</span>
+        <span>5ª → 61-75 km/h</span>
+        <span>6ª → 76+ km/h</span>
+    </div>
+    <footer>
+        🎯 Sistema de alerta ⚡ Indica o momento exato de trocar de marcha<br>
+        🔊 O beep toca quando a troca é necessária
+    </footer>
+</div>
+
+<script>
+    // Variáveis globais
+    let watchId = null;
+    let currentSpeed = 0;
+    let currentGear = 1;
+    let lastAlertGear = 0;
+    
+    // Elementos DOM
+    const speedDisplay = document.getElementById('speedDisplay');
+    const currentGearElem = document.getElementById('currentGear');
+    const alertBox = document.getElementById('alertBox');
+    const alertMessage = document.getElementById('alertMessage');
+    const alertSuggestion = document.getElementById('alertSuggestion');
+    const rpmFill = document.getElementById('rpmFill');
+    const gpsStatus = document.getElementById('gpsStatus');
+    const startBtn = document.getElementById('startGpsBtn');
+
+    // Configurações das faixas ideais de cada marcha
+    const gearRanges = [
+        { min: 0, max: 15, idealMin: 0, idealMax: 12, nextGear: 2 },      // 1ª marcha
+        { min: 16, max: 30, idealMin: 16, idealMax: 27, nextGear: 3 },     // 2ª marcha
+        { min: 31, max: 45, idealMin: 31, idealMax: 41, nextGear: 4 },     // 3ª marcha
+        { min: 46, max: 60, idealMin: 46, idealMax: 55, nextGear: 5 },     // 4ª marcha
+        { min: 61, max: 75, idealMin: 61, idealMax: 70, nextGear: 6 },     // 5ª marcha
+        { min: 76, max: 200, idealMin: 76, idealMax: 120, nextGear: null } // 6ª marcha
+    ];
+
+    // Função para identificar a marcha atual baseada na velocidade
+    function getCurrentGearBySpeed(speed) {
+        if (speed <= 15) return 1;
+        if (speed <= 30) return 2;
+        if (speed <= 45) return 3;
+        if (speed <= 60) return 4;
+        if (speed <= 75) return 5;
+        return 6;
+    }
+
+    // Função para tocar beep (alerta sonoro)
+    function playBeep() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
             
-            btn.disabled = true;
-            btn.innerText = 'Enviando...';
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 880; // Nota Lá (beep agudo)
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+            oscillator.stop(audioContext.currentTime + 0.5);
+            
+            // Fecha o contexto depois para não acumular
+            setTimeout(() => audioContext.close(), 600);
+        } catch(e) {
+            console.log("Beep não suportado neste navegador");
+        }
+    }
 
-            const payload = {
-                descricao: document.getElementById('descricao').value,
-                valor: document.getElementById('valor').value,
-                tipo: document.getElementById('tipo').value
-            };
-
-            try {
-                await fetch(APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                
-                status.innerText = "✅ Salvo com sucesso!";
-                status.className = "text-green-600 text-center pb-4";
-                document.getElementById('financeForm').reset();
-            } catch (error) {
-                status.innerText = "❌ Erro ao salvar.";
-                status.className = "text-red-600 text-center pb-4";
-            } finally {
-                status.classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerText = 'Salvar Lançamento';
+    // Função principal que atualiza tudo e dispara alertas
+    function updateBySpeed(speed) {
+        currentSpeed = Math.round(speed);
+        speedDisplay.innerText = currentSpeed;
+        
+        // Determina marcha atual
+        const newGear = getCurrentGearBySpeed(currentSpeed);
+        currentGear = newGear;
+        
+        // Atualiza display da marcha
+        let gearEmoji = "";
+        switch(currentGear) {
+            case 1: gearEmoji = "1️⃣"; break;
+            case 2: gearEmoji = "2️⃣"; break;
+            case 3: gearEmoji = "3️⃣"; break;
+            case 4: gearEmoji = "4️⃣"; break;
+            case 5: gearEmoji = "5️⃣"; break;
+            case 6: gearEmoji = "6️⃣"; break;
+        }
+        currentGearElem.innerHTML = `${gearEmoji} ${currentGear}ª Marcha`;
+        
+        // Calcular RPM simulado (%, apenas visual)
+        const gearIndex = currentGear - 1;
+        const range = gearRanges[gearIndex];
+        let rpmPercent = 0;
+        if (range) {
+            const maxRange = range.max;
+            const minRange = range.min;
+            if (currentSpeed >= minRange) {
+                rpmPercent = ((currentSpeed - minRange) / (maxRange - minRange)) * 100;
+                rpmPercent = Math.min(100, Math.max(0, rpmPercent));
             }
-        });
-    </script>
+        }
+        rpmFill.style.width = rpmPercent + "%";
+        
+        // LÓGICA DE ALERTA DE TROCA DE MARCHA
+        let alertLevel = "normal";
+        let message = "";
+        let suggestion = "";
+        let shouldBeep = false;
+        
+        // Regras para cada marcha
+        if (currentGear === 1) {
+            if (currentSpeed >= 14) {
+                alertLevel = "warning";
+                message = "⚠️ ATENÇÃO! HORA DE PASSAR PARA 2ª MARCHA";
+                suggestion = "👉 Acelere suavemente e engate a 2ª marcha";
+                if (currentSpeed >= 15 && lastAlertGear !== 2) shouldBeep = true;
+            } else if (currentSpeed >= 12) {
+                alertLevel = "warning";
+                message = "🟡 Prepare-se para trocar para 2ª marcha";
+                suggestion = "🚀 Velocidade ideal para troca: 15 km/h";
+            } else {
+                message = "✅ Marcha correta para arranque";
+                suggestion = "Acelere com suavidade";
+            }
+        }
+        else if (currentGear === 2) {
+            if (currentSpeed >= 29) {
+                alertLevel = "warning";
+                message = "⚠️ ATENÇÃO! HORA DE PASSAR PARA 3ª MARCHA";
+                suggestion = "👉 Velocidade atual: " + currentSpeed + " km/h - Troque agora!";
+                if (currentSpeed >= 30 && lastAlertGear !== 3) shouldBeep = true;
+            } else if (currentSpeed >= 26) {
+                alertLevel = "warning";
+                message = "🟡 Prepare-se para passar para 3ª marcha";
+                suggestion = "Ideal trocar aos 30 km/h";
+            } else {
+                message = "✅ 2ª marcha adequada para zona urbana";
+                suggestion = "Mantenha entre 16-30 km/h";
+            }
+        }
+        else if (currentGear === 3) {
+            if (currentSpeed >= 44) {
+                alertLevel = "warning";
+                message = "⚠️ ATENÇÃO! HORA DE PASSAR PARA 4ª MARCHA";
+                suggestion = "👉 Troque para 4ª marcha agora!";
+                if (currentSpeed >= 45 && lastAlertGear !== 4) shouldBeep = true;
+            } else if (currentSpeed >= 41) {
+                alertLevel = "warning";
+                message = "🟡 Prepare-se para 4ª marcha";
+                suggestion = "Troque aos 45 km/h para economia";
+            } else {
+                message = "✅ 3ª marcha ideal para vias movimentadas";
+                suggestion = "Perfeito entre 31-45 km/h";
+            }
+        }
+        else if (currentGear === 4) {
+            if (currentSpeed >= 59) {
+                alertLevel = "warning";
+                message = "⚠️ ATENÇÃO! HORA DE PASSAR PARA 5ª MARCHA";
+                suggestion = "👉 Reduza giro - engate 5ª marcha";
+                if (currentSpeed >= 60 && lastAlertGear !== 5) shouldBeep = true;
+            } else if (currentSpeed >= 56) {
+                alertLevel = "warning";
+                message = "🟡 Prepare 5ª marcha";
+                suggestion = "Troque idealmente aos 60 km/h";
+            } else {
+                message = "✅ 4ª marcha econômica para avenidas";
+                suggestion = "Entre 46-60 km/h";
+            }
+        }
+        else if (currentGear === 5) {
+            if (currentSpeed >= 74) {
+                alertLevel = "warning";
+                message = "⚠️ ATENÇÃO! HORA DE PASSAR PARA 6ª MARCHA";
+                suggestion = "👉 Velocidade de cruzeiro - engate 6ª";
+                if (currentSpeed >= 75 && lastAlertGear !== 6) shouldBeep = true;
+            } else if (currentSpeed >= 71) {
+                alertLevel = "warning";
+                message = "🟡 Prepare 6ª marcha";
+                suggestion = "Troque aos 75 km/h para menor consumo";
+            } else {
+                message = "✅ 5ª marcha excelente para rodovia";
+                suggestion = "Ótimo custo-benefício entre 61-75 km/h";
+            }
+        }
+        else if (currentGear === 6) {
+            if (currentSpeed > 120) {
+                alertLevel = "danger";
+                message = "🔴 VELOCIDADE MUITO ALTA!";
+                suggestion = "⚠️ Respeite os limites de segurança";
+            } else {
+                message = "✅ 6ª marcha - velocidade de cruzeiro";
+                suggestion = "Perfeito para economia em rodovias";
+            }
+        }
+        
+        // Aplica estilo visual
+        alertBox.classList.remove("alert-normal", "alert-warning", "alert-danger");
+        if (alertLevel === "normal") alertBox.classList.add("alert-normal");
+        else if (alertLevel === "warning") alertBox.classList.add("alert-warning");
+        else if (alertLevel === "danger") alertBox.classList.add("alert-danger");
+        
+        alertMessage.innerHTML = message;
+        alertSuggestion.innerHTML = suggestion;
+        
+        // Toca beep se necessário e evita repetir o mesmo alerta
+        if (shouldBeep) {
+            playBeep();
+            if (currentGear === 1) lastAlertGear = 2;
+            else if (currentGear === 2) lastAlertGear = 3;
+            else if (currentGear === 3) lastAlertGear = 4;
+            else if (currentGear === 4) lastAlertGear = 5;
+            else if (currentGear === 5) lastAlertGear = 6;
+        }
+        
+        // Reseta lastAlertGear se a velocidade baixar
+        if (currentSpeed < 10) lastAlertGear = 0;
+    }
+
+    // Funções de GPS
+    function startGPS() {
+        if (!navigator.geolocation) {
+            gpsStatus.innerHTML = "❌ Navegador não suporta GPS";
+            return;
+        }
+
+        gpsStatus.innerHTML = "🟢 Buscando sinal GPS... (aguarde alguns segundos)";
+        
+        watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const speedMps = position.coords.speed || 0;
+                const speedKmh = speedMps * 3.6;
+                updateBySpeed(speedKmh);
+                
+                const accuracy = position.coords.accuracy;
+                gpsStatus.innerHTML = `✅ GPS ativo | Precisão: ±${Math.round(accuracy)}m | ${new Date().toLocaleTimeString()}`;
+                
+                if (speedKmh === 0 && accuracy > 50) {
+                    gpsStatus.innerHTML += " 🅿️ Parado ou sinal fraco";
+                }
+            },
+            (error) => {
+                console.error(error);
+                let msg = "❌ Erro GPS: ";
+                switch(error.code) {
+                    case 1: msg += "Permissão negada. Ative a localização nas configurações."; break;
+                    case 2: msg += "Sinal indisponível. Fique ao ar livre."; break;
+                    default: msg += error.message;
+                }
+                gpsStatus.innerHTML = msg;
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 10000
+            }
+        );
+        
+        startBtn.innerText = "🛑 PARAR GPS";
+        startBtn.style.background = "#e74c3c";
+    }
+
+    function stopGPS() {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        speedDisplay.innerText = "--";
+        currentGearElem.innerHTML = "--";
+        alertBox.classList.remove("alert-warning", "alert-danger");
+        alertBox.classList.add("alert-normal");
+        alertMessage.innerHTML = "✅ Marcha correta";
+        alertSuggestion.innerHTML = "Clique em ATIVAR GPS para começar";
+        rpmFill.style.width = "0%";
+        gpsStatus.innerHTML = "📍 GPS desligado. Ative para começar.";
+        startBtn.innerText = "📍 ATIVAR GPS";
+        startBtn.style.background = "#FFC857";
+    }
+
+    startBtn.addEventListener('click', () => {
+        if (watchId === null) {
+            startGPS();
+        } else {
+            stopGPS();
+        }
+    });
+
+    // Inicialização
+    stopGPS();
+</script>
 </body>
 </html>
